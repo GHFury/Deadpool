@@ -1,3 +1,4 @@
 flask==3.0.0
 pytest==7.4.0
 flake8==6.1.0
+ddtrace==2.3.0
