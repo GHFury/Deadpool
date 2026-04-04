@@ -10,6 +10,7 @@ app = Flask(__name__)
 def home():
     return "Pipeline is working!"
 
+
 @app.route('/error')
 def trigger_error():
     raise Exception("Intentional error for testing!")
