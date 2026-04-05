@@ -39,4 +39,4 @@ jobs:
         run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
       - name: Build Docker image
-        run: docker build -t myapp:${{ env.IMAGE_TAG }} .
+        run: docker build -t myapp:${{ github.sha }} .
