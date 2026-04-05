@@ -62,3 +62,14 @@ a liveness probe every 5 seconds. Hitting `/kill` simulates a
 failure by returning 500 on health checks. Kubernetes detects
 the failure and automatically restarts the pod — no human
 intervention required.
+
+## Development notes
+
+- `sys` and `os` are commented out in `main.py` — uncomment
+  if adding environment variable reads or system exit handling
+- Rebuild and reload the image into kind after any code changes:
+```bash
+  docker build -t deadpool-app:latest .
+  kind load docker-image deadpool-app:latest
+  kubectl rollout restart deployment deadpool -n kube-system
+```
