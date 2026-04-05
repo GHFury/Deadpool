@@ -54,3 +54,11 @@ tests/               Unit and integration tests
 Dockerfile           Container build instructions
 requirements.txt     Python dependencies
 ```
+
+## Self-healing
+
+The app exposes a `/health` endpoint that Kubernetes polls via
+a liveness probe every 5 seconds. Hitting `/kill` simulates a
+failure by returning 500 on health checks. Kubernetes detects
+the failure and automatically restarts the pod — no human
+intervention required.
