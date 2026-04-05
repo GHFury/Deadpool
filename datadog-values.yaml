@@ -1,0 +1,34 @@
+datadog:
+  apiKey: 140895615d80be84e0f763d6aef336f9
+  site: us5.datadoghq.com
+
+  tags:
+    - "env:dev"
+
+  logs:
+    enabled: true
+    containerCollectAll: true
+
+  apm:
+    enabled: true
+    portEnabled: true
+
+  processAgent:
+    enabled: true
+
+  kubelet:
+    tlsVerify: false
+
+  cgroupVersion: 2
+
+agents:
+  image:
+    tag: "7"
+  containers:
+    agent:
+      securityContext:
+        privileged: true
+
+clusterAgent:
+  enabled: true
+  replicas: 1
