@@ -1,14 +1,31 @@
+import sys
+import os
 from ddtrace import patch_all
-from flask import Flask
+from flask import Flask, jsonify
 
 patch_all()
 
 app = Flask(__name__)
+healthy = True
 
 
 @app.route('/')
 def home():
     return "Pipeline is working!"
+
+
+@app.route('/health')
+def health():
+    if healthy:
+        return jsonify({"status": "healthy"}), 200
+    return jsonify({"status": "unhealthy"}), 500
+
+
+@app.route('/kill')
+def kill():
+    global healthy
+    healthy = False
+    return jsonify({"status": "unhealthy mode activated"}), 200
 
 
 @app.route('/error')
