@@ -21,7 +21,10 @@ chaos_state = {
 
 @app.before_request
 def inject_latency():
-    if chaos_state["latency_seconds"] > 0 and time.time() < chaos_state["latency_until"]:
+    if (
+        chaos_state["latency_seconds"] > 0
+        and time.time() < chaos_state["latency_until"]
+    ):
         time.sleep(chaos_state["latency_seconds"])
     elif chaos_state["latency_seconds"] > 0:
         chaos_state["latency_seconds"] = 0
@@ -43,39 +46,63 @@ def health():
 
 @app.route('/chaos/status')
 def chaos_status():
+    latency_active = (
+        time.time() < chaos_state["latency_until"]
+    )
+    memory_blob = chaos_state["memory_blob"]
     return jsonify({
         "healthy": chaos_state["healthy"],
-        "latency_seconds": chaos_state["latency_seconds"] if time.time() < chaos_state["latency_until"] else 0,
-        "memory_allocated_mb": len(chaos_state["memory_blob"]) / (1024 * 1024) if chaos_state["memory_blob"] else 0,
+        "latency_seconds": (
+            chaos_state["latency_seconds"]
+            if latency_active else 0
+        ),
+        "memory_allocated_mb": (
+            len(memory_blob) / (1024 * 1024)
+            if memory_blob else 0
+        ),
         "cpu_burn_active": chaos_state["cpu_active"],
     }), 200
 
 
 @app.route('/chaos/kill', methods=['POST'])
 def chaos_kill():
-    """Crashes the process. Kubernetes liveness probe fails, pod restarts."""
+    """Crashes the process.
+
+    Kubernetes liveness probe fails, pod restarts.
+    """
     os.kill(os.getpid(), signal.SIGTERM)
     return jsonify({"status": "killing process"}), 200
 
 
 @app.route('/chaos/health', methods=['POST'])
 def chaos_health():
-    """Toggles health status. Liveness probe returns 500, triggers pod restart."""
+    """Toggles health status.
+
+    Liveness probe returns 500, triggers pod restart.
+    """
     chaos_state["healthy"] = not chaos_state["healthy"]
-    status = "healthy" if chaos_state["healthy"] else "unhealthy"
+    status = (
+        "healthy" if chaos_state["healthy"]
+        else "unhealthy"
+    )
     return jsonify({"status": status}), 200
 
 
 @app.route('/chaos/latency', methods=['POST'])
 def chaos_latency():
-    """Adds artificial delay to all requests for a duration.
+    """Adds artificial delay to all requests.
+
     Body: {"seconds": 5, "duration": 30}
     """
-    data = request.get_json(force=True, silent=True) or {}
+    data = request.get_json(
+        force=True, silent=True
+    ) or {}
     delay = data.get("seconds", 3)
     duration = data.get("duration", 30)
     chaos_state["latency_seconds"] = delay
-    chaos_state["latency_until"] = time.time() + duration
+    chaos_state["latency_until"] = (
+        time.time() + duration
+    )
     return jsonify({
         "status": "latency injected",
         "delay_seconds": delay,
@@ -85,20 +112,28 @@ def chaos_latency():
 
 @app.route('/chaos/cpu', methods=['POST'])
 def chaos_cpu():
-    """Burns CPU for N seconds. Visible in Datadog resource metrics.
+    """Burns CPU for N seconds.
+
+    Visible in Datadog resource metrics.
     Body: {"seconds": 10}
     """
-    data = request.get_json(force=True, silent=True) or {}
+    data = request.get_json(
+        force=True, silent=True
+    ) or {}
     burn_time = data.get("seconds", 10)
 
     def burn():
         chaos_state["cpu_active"] = True
         end = time.time() + burn_time
         while time.time() < end:
-            _ = sum(i * i for i in range(10000))
+            _ = sum(
+                i * i for i in range(10000)
+            )
         chaos_state["cpu_active"] = False
 
-    thread = threading.Thread(target=burn, daemon=True)
+    thread = threading.Thread(
+        target=burn, daemon=True
+    )
     thread.start()
     return jsonify({
         "status": "cpu burn started",
@@ -108,12 +143,17 @@ def chaos_cpu():
 
 @app.route('/chaos/memory', methods=['POST'])
 def chaos_memory():
-    """Allocates a block of memory to simulate a leak.
+    """Allocates memory to simulate a leak.
+
     Body: {"mb": 50}
     """
-    data = request.get_json(force=True, silent=True) or {}
+    data = request.get_json(
+        force=True, silent=True
+    ) or {}
     mb = data.get("mb", 50)
-    chaos_state["memory_blob"] = bytearray(mb * 1024 * 1024)
+    chaos_state["memory_blob"] = bytearray(
+        mb * 1024 * 1024
+    )
     return jsonify({
         "status": "memory allocated",
         "mb": mb,
@@ -122,7 +162,7 @@ def chaos_memory():
 
 @app.route('/chaos/reset', methods=['POST'])
 def chaos_reset():
-    """Clears all chaos conditions and returns to normal."""
+    """Clears all chaos and returns to normal."""
     chaos_state["healthy"] = True
     chaos_state["latency_seconds"] = 0
     chaos_state["latency_until"] = 0
